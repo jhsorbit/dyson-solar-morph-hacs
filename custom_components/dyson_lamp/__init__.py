@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from .connection import ConnectionManager
-from . import light as light_mod
+from .poller import StatusPoller
 from .const import (
     CONF_ADDRESS,
     CONF_LTK,
@@ -50,9 +50,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     serial = entry.data.get(CONF_SERIAL, entry.data[CONF_ADDRESS])
 
-    # The coordinator is shared by all platforms (light, sensors, switches...)
-    # so it is created here, before any platform loads.
-    coordinator = light_mod.DysonLampCoordinator(hass, manager)
+    # The poller is shared by all platforms (light, sensors, switches...) and
+    # drives periodic status updates. It is created here, before any platform.
+    poller = StatusPoller(manager)
 
     # Register the device in the device registry so all entities group under it.
     device_registry = dr.async_get(hass)
@@ -66,7 +66,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = {
         "manager": manager,
-        "coordinator": coordinator,
+        "poller": poller,
         "serial": serial,
         "unloaded": False,
     }
@@ -74,9 +74,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORM_LIST)
     _register_services(hass)
 
-    # Keep the connection alive in persistent mode.
+    # Start periodic status polling and keep the connection alive in
+    # persistent mode.
     if manager.mode == MODE_PERSISTENT:
         await manager.ensure_connection()
+    await poller.start()
 
     return True
 
@@ -84,6 +86,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     data = hass.data[DOMAIN].pop(entry.entry_id, {})
+    poller: StatusPoller | None = data.get("poller")
+    if poller:
+        await poller.stop()
     manager: ConnectionManager | None = data.get("manager")
     if manager:
         await manager.close()

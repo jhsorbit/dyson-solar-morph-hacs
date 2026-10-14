@@ -31,7 +31,7 @@ async def async_setup_entry(
     data = hass.data[DOMAIN][entry.entry_id]
     manager: ConnectionManager = data["manager"]
     serial = data["serial"]
-    coordinator = data["coordinator"]
+    coordinator = data["poller"]
 
     async_add_entities(
         [DysonModeSelect(coordinator, manager, serial)],
@@ -68,4 +68,4 @@ class DysonModeSelect(SelectEntity):
     async def async_select_option(self, option: str) -> None:
         lamp = await self._manager.ensure_connection()
         await lamp.set_mode(EFFECTS[option])
-        await self._coordinator.refresh_now()
+        await self._coordinator.request_refresh()
