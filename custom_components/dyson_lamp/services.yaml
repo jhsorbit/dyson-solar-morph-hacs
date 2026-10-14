@@ -1,0 +1,76 @@
+sync_location:
+  name: Sync solar location
+  description: Push GPS latitude, longitude, timezone and current time to the lamp for onboard solar/circadian tracking.
+  fields:
+    latitude:
+      name: Latitude
+      description: Latitude in decimal degrees.
+      required: true
+      example: 52.5200
+      selector:
+        number:
+          min: -90
+          max: 90
+          step: 0.0001
+          mode: box
+    longitude:
+      name: Longitude
+      description: Longitude in decimal degrees.
+      required: true
+      example: 13.4050
+      selector:
+        number:
+          min: -180
+          max: 180
+          step: 0.0001
+          mode: box
+    timezone:
+      name: Timezone
+      description: IANA timezone identifier.
+      required: false
+      default: "Europe/Berlin"
+      example: "Europe/Berlin"
+      selector:
+        text:
+          type: url
+
+set_wakeup:
+  name: Run wake-up routine
+  description: Smoothly ramp the lamp from a low, warm setting to a bright, daylight setting (sunrise simulation).
+  fields:
+    duration:
+      name: Duration (seconds)
+      description: Total duration of the wake-up routine in seconds.
+      required: false
+      default: 1800
+      selector:
+        number:
+          min: 100
+          max: 7200
+          step: 60
+          unit_of_measurement: s
+          mode: box
+    lumens:
+      name: Target brightness (lumens)
+      description: Final brightness in lumens (100-1000).
+      required: false
+      default: 800
+      selector:
+        number:
+          min: 100
+          max: 1000
+          step: 10
+          unit_of_measurement: lm
+          mode: box
+    kelvin:
+      name: Target color temperature (Kelvin)
+      description: Final color temperature in Kelvin (2700-6500).
+      required: false
+      default: 4800
+      selector:
+        number:
+          min: 2700
+          max: 6500
+          step: 50
+          unit_of_measurement: K
+          mode: box

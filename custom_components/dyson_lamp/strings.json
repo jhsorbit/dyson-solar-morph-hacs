@@ -1,0 +1,43 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Dyson Lightcycle Morph",
+        "description": "Configure your Dyson lamp via BLE. You need the lamp serial/BLE address, your Dyson cloud user id and the LTK (Long Term Key) in hex.",
+        "data": {
+          "serial": "Serial number (e.g. E5T-EU-...)",
+          "address": "BLE address (UUID on macOS, MAC on Linux) - leave empty to auto-scan by serial",
+          "user_id": "Dyson cloud user id",
+          "ltk": "LTK (32 hex chars)",
+          "mode": "Connection mode"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect or authenticate to the lamp. Check address, user id and LTK.",
+      "unknown": "Unexpected error. See Home Assistant log."
+    },
+    "abort": {
+      "already_configured": "This lamp is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Dyson Lightcycle Morph options",
+        "description": "Choose how the BLE connection to the lamp should behave.",
+        "data": {
+          "mode": "Connection mode"
+        }
+      }
+    }
+  },
+  "selector": {
+    "mode": {
+      "options": {
+        "persistent": "Persistent (keep connection always open)",
+        "app_compatible": "App-compatible (connect only during actions)"
+      }
+    }
+  }
+}
