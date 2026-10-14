@@ -10,7 +10,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfLightIntensity, UnitOfTemperature
+from homeassistant.const import UnitOfLuminousFlux, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -85,7 +85,7 @@ class DysonBrightnessSensor(DysonSensorBase):
     """Current lamp brightness in lumens."""
 
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = UnitOfLightIntensity.LUMENS
+    _attr_native_unit_of_measurement = UnitOfLuminousFlux.LUMENS
 
     def __init__(self, coordinator, manager, serial: str) -> None:
         super().__init__(coordinator, manager, serial)
