@@ -46,11 +46,14 @@ async def async_setup_entry(
     """Set up the Dyson light entity."""
     data = hass.data[DOMAIN][entry.entry_id]
     manager: ConnectionManager = data["manager"]
+    coordinator: DysonLampCoordinator = data["coordinator"]
     serial = data["serial"]
 
-    coordinator = DysonLampCoordinator(hass, manager)
-    hass.data[DOMAIN][entry.entry_id]["light_coordinator"] = coordinator
     async_add_entities([DysonLight(coordinator, manager, serial)], update_before_add=True)
+
+    # Trigger the first state read. Subsequent refreshes happen on the
+    # coordinator's update interval (persistent mode) or on demand.
+    await coordinator.async_refresh()
 
 
 class DysonLampCoordinator(DataUpdateCoordinator[None]):

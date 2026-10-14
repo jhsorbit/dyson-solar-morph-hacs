@@ -60,9 +60,18 @@ There is **no native Home Assistant "alarm that triggers a device"** component �
 
 The ramp (`run_wakeup`) runs approximately one update per second over the chosen duration with a gentle quadratic brightness curve and a linear color-temperature rise, then leaves the lamp on at the target settings.
 
+## Entities
+
+Besides the light, the integration provides status sensors (updated by the poller):
+- **Binary sensors**: Power (on/off), Movement Sensor (PIR)
+- **Sensors**: Brightness (lm), Color Temperature (K)
+- **Switch**: Auto-Brightness (Ambient Light Sensor), Movement Sensor
+- **Select**: preset mode
+- **Buttons**: Wake Up, Sync Solar Location
+
 ## Status polling
 
-In **persistent** mode the lamp state (on/off, brightness, color temp) is polled every **5 seconds**, so the light entity (and its on/off state) stays current — e.g. if the lamp is turned via touch on the head or the Dyson app. In **app-compatible** mode polling is disabled by design so the BLE connection is not kept open; state is refreshed after each manual action.
+In **persistent** mode the lamp state (on/off, brightness, color temp) is polled every **5 seconds**, so the light entity and the status sensors stay current — e.g. if the lamp is turned via touch on the head or the Dyson app. In **app-compatible** mode polling is disabled by design so the BLE connection is not kept open; state is refreshed after each manual action.
 
 ## Development layout
 
@@ -76,6 +85,8 @@ custom_components/dyson_lamp/
 ├── light.py           # main light entity + polling coordinator
 ├── select.py          # preset-mode select
 ├── switch.py          # auto-brightness & movement switches
+├── sensor.py          # brightness & color-temp status sensors
+├── binary_sensor.py   # power & movement on/off status
 ├── button.py          # wake-up & solar-sync buttons
 ├── services.yaml      # service definitions
 ├── strings.json       # config flow strings

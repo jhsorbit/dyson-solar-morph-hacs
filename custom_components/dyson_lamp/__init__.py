@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
 from .connection import ConnectionManager
+from . import light as light_mod
 from .const import (
     CONF_ADDRESS,
     CONF_LTK,
@@ -30,6 +31,8 @@ PLATFORM_LIST = [
     Platform.SWITCH,
     Platform.SELECT,
     Platform.BUTTON,
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
 ]
 
 
@@ -47,6 +50,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     serial = entry.data.get(CONF_SERIAL, entry.data[CONF_ADDRESS])
 
+    # The coordinator is shared by all platforms (light, sensors, switches...)
+    # so it is created here, before any platform loads.
+    coordinator = light_mod.DysonLampCoordinator(hass, manager)
+
     # Register the device in the device registry so all entities group under it.
     device_registry = dr.async_get(hass)
     device_registry.async_get_or_create(
@@ -59,6 +66,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = {
         "manager": manager,
+        "coordinator": coordinator,
         "serial": serial,
         "unloaded": False,
     }

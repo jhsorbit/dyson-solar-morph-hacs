@@ -31,7 +31,7 @@ async def async_setup_entry(
     data = hass.data[DOMAIN][entry.entry_id]
     manager: ConnectionManager = data["manager"]
     serial = data["serial"]
-    coordinator = data["light_coordinator"]
+    coordinator = data["coordinator"]
 
     async_add_entities(
         [
