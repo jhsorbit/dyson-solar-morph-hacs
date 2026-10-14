@@ -1,0 +1,108 @@
+# =====================================================================
+# Dyson Lightcycle Morph - Weekly wake-up alarm (phone friendly)
+# =====================================================================
+# Drop this file into HA's `packages/dyson_week_alarm.yaml` (packages
+# mode enabled in configuration.yaml) and reload. HA creates the 14
+# helpers + 1 automation on the next configuration reload.
+#
+# Control on your phone/dashboard:
+#   - switch.day_MON ... switch.day_SUN   on/off per weekday
+#   - date_time.wake_MON ... wake_SUN    wake time per day
+#
+# On each wake time, the chosen days are matched, the lamp is ramped up
+# (soft sunrise). Enable the `.._enabled` toggles to arm a day.
+# =====================================================================
+
+input_boolean:
+  wake_mon:
+    name: Wake Monday
+    icon: mdi:moon-waning-crescent
+  wake_tue:
+    name: Wake Tuesday
+    icon: mdi:moon-waning-crescent
+  wake_wed:
+    name: Wake Wednesday
+    icon: mdi:moon-waning-crescent
+  wake_thu:
+    name: Wake Thursday
+    icon: mdi:moon-waning-crescent
+  wake_fri:
+    name: Wake Friday
+    icon: mdi:moon-waning-crescent
+  wake_sat:
+    name: Wake Saturday
+    icon: mdi:moon-waxing-crescent
+  wake_sun:
+    name: Wake Sunday
+    icon: mdi:moon-waxing-crescent
+
+input_datetime:
+  wake_time_mon:
+    name: Wake time Monday
+    has_date: false
+    has_time: true
+    icon: mdi:alarm
+  wake_time_tue:
+    name: Wake time Tuesday
+    has_date: false
+    has_time: true
+    icon: mdi:alarm
+  wake_time_wed:
+    name: Wake time Wednesday
+    has_date: false
+    has_time: true
+    icon: mdi:alarm
+  wake_time_thu:
+    name: Wake time Thursday
+    has_date: false
+    has_time: true
+    icon: mdi:alarm
+  wake_time_fri:
+    name: Wake time Friday
+    has_date: false
+    has_time: true
+    icon: mdi:alarm
+  wake_time_sat:
+    name: Wake time Saturday
+    has_date: false
+    has_time: true
+    icon: mdi:alarm
+  wake_time_sun:
+    name: Wake time Sunday
+    has_date: false
+    has_time: true
+    icon: mdi:alarm
+
+automation:
+  - alias: "Dyson Lamp: Weekly wake-up alarm check"
+    id: dyson_week_alarm_check
+    description: >-
+      Fires the lamp wake-up ramp whenever the current minute matches an
+      enabled weekday's wake time.
+    trigger:
+      - platform: time_pattern
+        minutes: "/1"
+    condition: []
+    action:
+      # The ramp must FINISH at the configured wake time, so it is launched
+      # `duration` minutes earlier. For simplicity the duration is fixed here
+      # (30 min) and must match the `duration` passed to set_wakeup below.
+      # The matching second differs from a fixed time trigger by only one
+      # minute window, so a per-minute check is precise enough.
+      - variables:
+          today_en: "{{ now().strftime('%a').lower() }}"
+          enabled: "{{ is_state('input_boolean.wake_' ~ today_en, 'on') }}"
+          wake_time: "{{ states['input_datetime.wake_time_' ~ today_en].state }}"
+          ramp_start: >-
+            {{ (as_timestamp(wake_time) - 30 * 60) | timestamp_custom('%H:%M', false) }}
+      - condition: template
+        value_template: "{{ enabled }}"
+      - condition: template
+        value_template: "{{ ramp_start == now().strftime('%H:%M') }}"
+      - service: dyson_lamp.set_wakeup
+        data:
+          duration: 30
+          lumens: 800
+          kelvin: 4800
+    mode: single
+    max_exceeded: silent

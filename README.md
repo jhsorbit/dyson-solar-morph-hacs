@@ -60,6 +60,24 @@ There is **no native Home Assistant "alarm that triggers a device"** component �
 
 The ramp (`run_wakeup`) runs approximately one update per second over the chosen duration with a gentle quadratic brightness curve and a linear color-temperature rise, then leaves the lamp on at the target settings.
 
+### Weekly alarm with per-day times (phone friendly)
+
+If you want **different wake times per weekday**, controllable from your phone/HA app, this repo ships a **package** file: `packages/dyson_week_alarm.yaml`.
+
+It creates 14 helpers plus one central automation:
+
+- 7 **switches** (`input_boolean.wake_mon` … `wake_sun`) — arm/disarm each weekday from your phone.
+- 7 **date/time helpers** (`input_datetime.wake_time_mon` … `wake_time_sun`) — set a separate wake time per day.
+- 1 **automation** that checks every minute and launches the ramp at the right time (the ramp finishes **at** each configured wake time).
+
+**Install:**
+
+1. Enable packages in HA: add `homeassistant: packages: !include_dir_named packages` (or the equivalent) to `configuration.yaml`.
+2. Copy `packages/dyson_week_alarm.yaml` from this repo into your HA `packages/` folder.
+3. Reload Home Assistant (Settings → System → Restart, or reload YAML). The helpers and automation appear automatically.
+
+Then, on your phone/dashboard, toggle `wake_mon` etc. **on** to arm a day and set each `wake_time_*` helper to that day's wake-up time. The ramp `duration`/`lumens`/`kelvin` are fixed inside the file (30 min / 800 lm / 4800 K by default) — edit the YAML if you want to change them.
+
 ## Entities
 
 Besides the light, the integration provides status sensors (updated by the poller):

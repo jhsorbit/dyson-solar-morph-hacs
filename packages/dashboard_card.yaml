@@ -1,0 +1,69 @@
+# =====================================================================
+# Dyson Lightcycle Morph - Weekly alarm dashboard card (optional)
+# =====================================================================
+# Paste into any dashboard: click Edit dashboard -> Add card -> Manual /
+# YAML mode, then paste this block. It arranges the 14 helpers per
+# weekday (switch to arm + time) so you can set everything from your
+# phone in a single view.
+# =====================================================================
+type: vertical-stack
+cards:
+  - type: heading
+    heading: Dyson Lamp weekly alarm
+    heading_level: 3
+
+  - type: entities
+    title: Monday
+    entities:
+      - entity: input_boolean.wake_mon
+        name: Armed
+      - entity: input_datetime.wake_time_mon
+        name: Wake time
+
+  - type: entities
+    title: Tuesday
+    entities:
+      - entity: input_boolean.wake_tue
+        name: Armed
+      - entity: input_datetime.wake_time_tue
+        name: Wake time
+
+  - type: entities
+    title: Wednesday
+    entities:
+      - entity: input_boolean.wake_wed
+        name: Armed
+      - entity: input_datetime.wake_time_wed
+        name: Wake time
+
+  - type: entities
+    title: Thursday
+    entities:
+      - entity: input_boolean.wake_thu
+        name: Armed
+      - entity: input_datetime.wake_time_thu
+        name: Wake time
+
+  - type: entities
+    title: Friday
+    entities:
+      - entity: input_boolean.wake_fri
+        name: Armed
+      - entity: input_datetime.wake_time_fri
+        name: Wake time
+
+  - type: entities
+    title: Saturday
+    entities:
+      - entity: input_boolean.wake_sat
+        name: Armed
+      - entity: input_datetime.wake_time_sat
+        name: Wake time
+
+  - type: entities
+    title: Sunday
+    entities:
+      - entity: input_boolean.wake_sun
+        name: Armed
+      - entity: input_datetime.wake_time_sun
+        name: Wake time
