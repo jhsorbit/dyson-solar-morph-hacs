@@ -56,6 +56,7 @@ class DysonLight(LightEntity):
     _attr_has_entity_name = True
     _attr_available = True
     _attr_supported_color_modes = {ColorMode.COLOR_TEMP}
+    _attr_color_mode = ColorMode.COLOR_TEMP
     _attr_min_color_temp_kelvin = COLOR_TEMP_MIN
     _attr_max_color_temp_kelvin = COLOR_TEMP_MAX
     _attr_supported_features = LightEntityFeature.EFFECT

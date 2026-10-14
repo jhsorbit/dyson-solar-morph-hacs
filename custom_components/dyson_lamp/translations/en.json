@@ -14,11 +14,11 @@
       }
     },
     "error": {
-      "cannot_connect": "[dyson_lamp v0.2.9] Could not connect to the lamp. Check the address (must be a MAC on Linux/HA, or empty for auto-scan), user id and LTK.",
-      "auth_failed": "[dyson_lamp v0.2.9] Connected, but authentication failed. Check the user id and LTK.",
-      "mac_uuid": "[dyson_lamp v0.2.9] This looks like a macOS CoreBluetooth UUID. On Linux/HA enter the lamp's MAC address (e.g. A4:C1:38:AA:BB:CC) or leave the address empty to auto-scan by serial.",
-      "no_address": "[dyson_lamp v0.2.9] Provide either a BLE address (MAC) or a serial number.",
-      "unknown": "[dyson_lamp v0.2.9] Unexpected error. See Home Assistant log."
+      "cannot_connect": "[dyson_lamp v0.2.10] Could not connect to the lamp. Check the address (must be a MAC on Linux/HA, or empty for auto-scan), user id and LTK.",
+      "auth_failed": "[dyson_lamp v0.2.10] Connected, but authentication failed. Check the user id and LTK.",
+      "mac_uuid": "[dyson_lamp v0.2.10] This looks like a macOS CoreBluetooth UUID. On Linux/HA enter the lamp's MAC address (e.g. A4:C1:38:AA:BB:CC) or leave the address empty to auto-scan by serial.",
+      "no_address": "[dyson_lamp v0.2.10] Provide either a BLE address (MAC) or a serial number.",
+      "unknown": "[dyson_lamp v0.2.10] Unexpected error. See Home Assistant log."
     },
     "abort": {
       "already_configured": "This lamp is already configured."
