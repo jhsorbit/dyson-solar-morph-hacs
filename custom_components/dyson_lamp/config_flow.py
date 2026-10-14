@@ -23,15 +23,30 @@ from .const import (
     CONF_USER_ID,
     CONNECTION_MODES,
     DOMAIN,
+    INTEGRATION_VERSION,
     MODE_PERSISTENT,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def _ver(msg: str) -> str:
+    """Prefix an error message with the integration version."""
+    return f"[dyson_lamp v{INTEGRATION_VERSION}] {msg}"
+
+
+class ConfigError(ValueError):
+    """A config-flow error carrying a strings.json error key."""
+
+    def __init__(self, error_key: str, message: str) -> None:
+        super().__init__(_ver(message))
+        self.error_key = error_key
+
+
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_SERIAL, default=""): str,
-        vol.Required(CONF_ADDRESS, default=""): str,
+        vol.Optional(CONF_ADDRESS, default=""): str,
         vol.Required(CONF_USER_ID, default=""): str,
         vol.Required(CONF_LTK, default=""): str,
         vol.Required(CONF_MODE, default=MODE_PERSISTENT): vol.In(CONNECTION_MODES),
@@ -54,14 +69,15 @@ async def _validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str
 
     address = data.get(CONF_ADDRESS) or data.get(CONF_SERIAL)
     if not address:
-        raise ValueError("No BLE address or serial provided")
+        raise ConfigError("no_address", "Provide either a BLE address (MAC) or a serial number.")
 
     if "-" in address and ":" not in address and len(address) >= 18:
         # Likely a macOS CoreBluetooth UUID pasted in. On Linux/HA the BLE
         # address must be a MAC (XX:XX:XX:XX:XX:XX) or empty (auto-scan by serial).
-        raise ValueError(
+        raise ConfigError(
+            "mac_uuid",
             "The address looks like a macOS CoreBluetooth UUID. On Linux/HA enter the "
-            "lamp's MAC address (e.g. A4:C1:38:AA:BB:CC) or leave it empty to auto-scan by serial."
+            "lamp's MAC address (e.g. A4:C1:38:AA:BB:CC) or leave it empty to auto-scan by serial.",
         )
 
     client = LampClient(
@@ -73,10 +89,10 @@ async def _validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str
         await client.connect(timeout=15, hass=hass)
     except DysconnError as err:
         _LOGGER.exception("Dyson lamp connection failed (phase=connect)")
-        raise ValueError(f"Could not connect to the lamp: {err}") from err
+        raise ConfigError("cannot_connect", f"Could not connect to the lamp: {err}") from err
     except Exception as err:  # noqa: BLE001
         _LOGGER.exception("Dyson lamp authentication failed (phase=auth)")
-        raise ValueError(f"Connected but authentication failed: {err}") from err
+        raise ConfigError("auth_failed", f"Connected but authentication failed: {err}") from err
     finally:
         await client.disconnect()
 
@@ -103,7 +119,8 @@ class DysonLampConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 info = await _validate_input(self.hass, user_input)
             except ValueError as err:
-                errors["base"] = "cannot_connect"
+                key = getattr(err, "error_key", "cannot_connect")
+                errors["base"] = key
                 _LOGGER.warning("Dyson lamp config validation failed: %s", err)
             except Exception:  # noqa: BLE001
                 _LOGGER.exception("Unexpected error during Dyson lamp validation")

@@ -4,6 +4,10 @@ from __future__ import annotations
 
 DOMAIN = "dyson_lamp"
 
+# Integration version, surfaced in config-flow error messages so the user
+# knows which build is being validated.
+INTEGRATION_VERSION = "0.2.1"
+
 # Configuration flow / entry keys
 CONF_SERIAL = "serial"
 CONF_ADDRESS = "address"
