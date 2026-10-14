@@ -1,6 +1,6 @@
 {
   "name": "Dyson Lightcycle Morph",
   "render_readme": true,
-  "homeassistant": "2023.8.0",
+  "homeassistant": "2024.6.0",
   "content_in_root": false
 }

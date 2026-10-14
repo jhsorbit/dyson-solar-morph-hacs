@@ -1,0 +1,70 @@
+blueprint:
+  name: Dyson Lightcycle Morph - Wake up with light
+  description: Ramp the Dyson lamp gradually up (like the app's lightcycle) as a gentle sunrise alarm clock.
+  domain: automation
+  input:
+    ramp_start_time:
+      name: Ramp start time
+      description: When the light starts ramping up (set this to your desired wake time minus the ramp duration, e.g. 06:30 for a 07:00 wake with 30 min ramp).
+      selector:
+        time:
+    days:
+      name: Days of week
+      description: Only run on these days.
+      default:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+        - sat
+        - sun
+      selector:
+        object:
+    duration:
+      name: Ramp duration (minutes)
+      description: How long the light ramps from warm/dim to bright/cool until it reaches full brightness.
+      selector:
+        number:
+          min: 5
+          max: 60
+          step: 1
+          unit_of_measurement: minutes
+      default: 30
+    brightness:
+      name: Target brightness (lumens)
+      description: Final brightness reached at the end of the ramp (100-1000).
+      selector:
+        number:
+          min: 100
+          max: 1000
+          step: 10
+          unit_of_measurement: lm
+      default: 800
+    color_temp:
+      name: Target color temperature (Kelvin)
+      description: Final color temperature reached at the end of the ramp (2700-6500).
+      selector:
+        number:
+          min: 2700
+          max: 6500
+          step: 50
+          unit_of_measurement: K
+      default: 4800
+
+trigger:
+  - platform: time
+    at: !input ramp_start_time
+
+condition:
+  - condition: time
+    weekday: !input days
+
+action:
+  - service: dyson_lamp.set_wakeup
+    data:
+      duration: !input duration
+      lumens: !input brightness
+      kelvin: !input color_temp
+
+mode: single

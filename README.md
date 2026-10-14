@@ -46,7 +46,23 @@ These come from your own Dyson account (from the reverse-engineering work in the
 ## Services
 
 - `dyson_lamp.sync_location` — push GPS lat/lon, timezone and time to the lamp.
-- `dyson_lamp.set_wakeup` — run the sunrise wake-up ramp (`duration`, `lumens`, `kelvin`).
+- `dyson_lamp.set_wakeup` — run the sunrise wake-up ramp (`duration` in minutes, `lumens`, `kelvin`).
+
+## Wake-up / alarm ("Wecker")
+
+There is **no native Home Assistant "alarm that triggers a device"** component — the built-in Alarm/Alarm Control Panel is for alarm systems, not wake-up timers. The idiomatic way in HA is a simple **automation**: a `time` trigger that calls `dyson_lamp.set_wakeup`. This repo ships a ready-made blueprint for exactly that.
+
+1. Install the blueprint from within this integration (HACS): **Automations → Blueprints**, search **"Dyson Lightcycle Morph - Wake up with light"**.
+2. Create an automation from it:
+   - **Ramp start time** — when the light starts ramping up (set to your wake time minus the ramp duration, e.g. `06:30` for a `07:00` wake with a 30 min ramp).
+   - **Days of week**, **Ramp duration (min)**, **Target brightness**, **Target color temperature**.
+3. Save — the automation ramps the lamp from warm/dim to bright/cool each morning, just like the app's lightcycle.
+
+The ramp (`run_wakeup`) runs approximately one update per second over the chosen duration with a gentle quadratic brightness curve and a linear color-temperature rise, then leaves the lamp on at the target settings.
+
+## Status polling
+
+In **persistent** mode the lamp state (on/off, brightness, color temp) is polled every **5 seconds**, so the light entity (and its on/off state) stays current — e.g. if the lamp is turned via touch on the head or the Dyson app. In **app-compatible** mode polling is disabled by design so the BLE connection is not kept open; state is refreshed after each manual action.
 
 ## Development layout
 
@@ -64,6 +80,7 @@ custom_components/dyson_lamp/
 ├── services.yaml      # service definitions
 ├── strings.json       # config flow strings
 └── translations/en.json
+blueprints/automation/dyson_lamp/wake_up.yml   # wake-up alarm blueprint
 hacs.json
 ```
 

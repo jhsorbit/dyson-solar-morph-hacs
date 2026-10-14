@@ -6,7 +6,7 @@ DOMAIN = "dyson_lamp"
 
 # Integration version, surfaced in config-flow error messages so the user
 # knows which build is being validated.
-INTEGRATION_VERSION = "0.2.1"
+INTEGRATION_VERSION = "0.2.2"
 
 # Configuration flow / entry keys
 CONF_SERIAL = "serial"
@@ -57,5 +57,5 @@ DEVICE_MANUFACTURER = "Dyson"
 # Service names (platforms) this integration provides
 PLATFORMS = ["light", "switch", "select"]
 
-SCAN_INTERVAL_SECONDS = 15
+SCAN_INTERVAL_SECONDS = 5
 CONNECT_TIMEOUT_SECONDS = 15

@@ -49,7 +49,7 @@ async def async_setup_entry(
                 serial,
                 "movement_sensor",
                 "Movement Sensor (PIR)",
-                "movement",
+                "movement_sensor",
             ),
         ],
         update_before_add=True,

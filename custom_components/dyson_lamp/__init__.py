@@ -121,8 +121,9 @@ def _register_services(hass: HomeAssistant) -> None:
         if manager is None:
             return
         lamp = await manager.ensure_connection()
+        duration_min = float(call.data.get("duration", 30))
         await lamp.run_wakeup(
-            duration_sec=int(call.data.get("duration", 1800)),
+            duration_sec=int(duration_min * 60),
             target_lumens=int(call.data.get("lumens", 800)),
             target_kelvin=int(call.data.get("kelvin", 4800)),
         )

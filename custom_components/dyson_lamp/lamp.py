@@ -430,27 +430,54 @@ class LampClient:
         target_kelvin: int = 4800,
         callback: Optional[Callable] = None,
     ) -> None:
+        """Run a sunrise-style wake-up ramp over ``duration_sec`` seconds.
+
+        Brightness eases slowly at the start (like the app's lightcycle) using
+        a quadratic curve, while color temperature ramps linearly from warm to
+        the target daylight value. The ramp runs for exactly ``duration_sec``
+        and leaves the lamp on at the target setting.
+        """
         start_lumens = 100
         start_kelvin = 2700
-        steps = max(10, min(100, duration_sec // 5))
-        interval = duration_sec / steps
+        duration_sec = max(60, int(duration_sec))
+
+        # ~1 update per second keeps BLE traffic reasonable while staying smooth.
+        interval = 1.0
+        steps = duration_sec
+        # Cap total writes so very long ramps don't flood the lamp with packets.
+        max_steps = duration_sec // 1
+        if max_steps > 1200:
+            interval = duration_sec / 1200
+            steps = 1200
 
         await self.set_brightness(start_lumens)
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.2)
         await self.set_color_temp(start_kelvin)
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.2)
         await self.set_power(True)
 
-        start_time = time.time()
-        for i in range(1, steps + 1):
-            elapsed = time.time() - start_time
-            progress = min(1.0, elapsed / duration_sec)
-            cur_lumens = int(round(start_lumens + (target_lumens - start_lumens) * (progress**1.5)))
-            cur_kelvin = int(round(start_kelvin + (target_kelvin - start_kelvin) * progress))
+        loop = asyncio.get_running_loop()
+        start_time = loop.time()
 
-            await self.set_brightness(cur_lumens)
-            await asyncio.sleep(0.3)
-            await self.set_color_temp(cur_kelvin)
+        for i in range(1, steps + 1):
+            progress = i / steps
+            # Quadratic brightness curve: slow, gentle start -> finishing ramp.
+            lum = start_lumens + (target_lumens - start_lumens) * (progress**1.5)
+            kelvin = start_kelvin + (target_kelvin - start_kelvin) * progress
+
+            await self.set_brightness(int(round(lum)))
+            await self.set_color_temp(int(round(kelvin)))
             if callback:
-                callback(i, steps, progress, cur_lumens, cur_kelvin)
-            await asyncio.sleep(interval)
+                callback(i, steps, progress, int(round(lum)), int(round(kelvin)))
+
+            # Aim to end exactly at duration_sec.
+            elapsed = loop.time() - start_time
+            target_time = progress * duration_sec
+            delay = max(0.0, target_time - elapsed)
+            if delay > 0:
+                await asyncio.sleep(delay)
+
+        # Ensure the lamp ends fully on at the target values.
+        await self.set_brightness(target_lumens)
+        await self.set_color_temp(target_kelvin)
+        await self.set_power(True)
