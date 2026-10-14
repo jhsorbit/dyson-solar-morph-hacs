@@ -6,7 +6,7 @@ DOMAIN = "dyson_lamp"
 
 # Integration version, surfaced in config-flow error messages so the user
 # knows which build is being validated.
-INTEGRATION_VERSION = "0.2.6"
+INTEGRATION_VERSION = "0.2.7"
 
 # Configuration flow / entry keys
 CONF_SERIAL = "serial"
@@ -59,3 +59,7 @@ PLATFORMS = ["light", "switch", "select"]
 
 SCAN_INTERVAL_SECONDS = 30
 CONNECT_TIMEOUT_SECONDS = 15
+
+# How often to re-sync the current time/date + location to the lamp so its
+# internal solar/circadian clock stays accurate.
+SOLAR_SYNC_INTERVAL_SECONDS = 86400  # once per day

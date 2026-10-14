@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -17,11 +18,12 @@ from .const import (
     CONF_MODE,
     CONF_SERIAL,
     CONF_USER_ID,
-    DOMAIN,
     DEVICE_MANUFACTURER,
     DEVICE_MODEL,
     DEVICE_NAME,
+    DOMAIN,
     MODE_PERSISTENT,
+    SOLAR_SYNC_INTERVAL_SECONDS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -74,11 +76,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORM_LIST)
     _register_services(hass)
 
-    # Start periodic status polling and keep the connection alive in
-    # persistent mode.
+    # Start periodic status polling, an initial+daily solar/location sync, and
+    # keep the connection alive in persistent mode.
     if manager.mode == MODE_PERSISTENT:
         await manager.ensure_connection()
     await poller.start()
+    sync_task = asyncio.create_task(_auto_solar_sync(hass, manager))
+    hass.data[DOMAIN][entry.entry_id]["sync_task"] = sync_task
 
     return True
 
@@ -86,6 +90,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
     data = hass.data[DOMAIN].pop(entry.entry_id, {})
+    sync_task = data.get("sync_task")
+    if sync_task:
+        sync_task.cancel()
     poller: StatusPoller | None = data.get("poller")
     if poller:
         await poller.stop()
@@ -143,3 +150,23 @@ def _register_services(hass: HomeAssistant) -> None:
 
     hass.services.async_register(DOMAIN, "sync_location", _sync_location)
     hass.services.async_register(DOMAIN, "set_wakeup", _set_wakeup)
+
+
+async def _auto_solar_sync(hass: HomeAssistant, manager: ConnectionManager) -> None:
+    """Sync the current time/date, timezone and location to the lamp daily.
+
+    Keeps the lamp's internal clock and solar/circadian tracker accurate.
+    """
+    while True:
+        try:
+            lat = hass.config.latitude
+            lon = hass.config.longitude
+            tz = str(hass.config.time_zone)
+            lamp = await manager.ensure_connection()
+            await lamp.sync_solar_location(latitude=lat, longitude=lon, timezone_str=tz)
+            _LOGGER.info("Dyson lamp time/location synced (lat=%.4f lon=%.4f tz=%s)", lat, lon, tz)
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning("Dyson lamp time/location sync failed (will retry): %s", err)
+        await asyncio.sleep(SOLAR_SYNC_INTERVAL_SECONDS)
