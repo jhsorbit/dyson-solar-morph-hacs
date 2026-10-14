@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -113,9 +114,24 @@ class DysonLight(LightEntity):
         if ATTR_EFFECT in kwargs:
             await lamp.set_mode(EFFECTS[kwargs[ATTR_EFFECT]])
         await lamp.set_power(True)
+        # Optimistically reflect ON right away so the UI doesn't flicker back
+        # to OFF while the lamp applies the power bit.
+        await self._set_optimistic(on=True)
+        await asyncio.sleep(0.6)
         await self._poller.request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         lamp = await self._manager.ensure_connection()
         await lamp.set_power(False)
+        await self._set_optimistic(on=False)
+        await asyncio.sleep(0.6)
         await self._poller.request_refresh()
+
+    async def _set_optimistic(self, on: bool) -> None:
+        poller = self._poller
+        state = poller.lamp_state
+        if state is None:
+            return
+        # Reflect the new power state immediately; the next poll reconciles.
+        poller.lamp_state.is_on = on
+        self.async_write_ha_state()
