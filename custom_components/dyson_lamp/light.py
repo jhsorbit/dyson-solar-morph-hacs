@@ -54,6 +54,7 @@ class DysonLight(LightEntity):
     """Representation of the Dyson Lightcycle Morph as a light."""
 
     _attr_has_entity_name = True
+    _attr_available = True
     _attr_supported_color_modes = {ColorMode.COLOR_TEMP}
     _attr_min_color_temp_kelvin = COLOR_TEMP_MIN
     _attr_max_color_temp_kelvin = COLOR_TEMP_MAX
@@ -82,10 +83,6 @@ class DysonLight(LightEntity):
 
     def _on_state_update(self) -> None:
         self.async_write_ha_state()
-
-    @property
-    def available(self) -> bool:
-        return self._poller.lamp_state is not None
 
     @property
     def lamp_state(self):
