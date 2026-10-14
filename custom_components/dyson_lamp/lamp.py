@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import hmac
+import logging
 import math
 import os
 import struct
@@ -19,6 +20,8 @@ import uuid
 from typing import Callable, Optional
 
 from bleak import BleakScanner
+
+_LOGGER = logging.getLogger(__name__)
 
 try:
     from bleak_retry_connector import establish_connection as _establish_connection
@@ -182,26 +185,106 @@ class LampClient:
         self._payload_b_future: Optional[asyncio.Future] = None
         self._auth_ack_future: Optional[asyncio.Future] = None
 
-    async def connect(self, timeout: float = 15.0) -> None:
+    async def connect(self, timeout: float = 15.0, hass=None) -> None:
         if self.client and self.client.is_connected:
             return
 
-        address = await self._resolve_address()
-        from bleak import BleakClient
-
-        self.client = BleakClient(address, timeout=timeout)
-        await self.client.connect()
+        ble_device = await self._resolve_device(hass)
+        await self._establish(ble_device, timeout)
         await self._authenticate()
 
-    async def _resolve_address(self) -> str:
-        if "-" in self.address and len(self.address) >= 18:
-            return self.address
-        # Address is a serial/name -> scan for it
-        devs = await BleakScanner.discover(timeout=5.0)
-        for d in devs:
-            if d.name == self.address or (d.name and self.address in d.name):
-                return d.address
-        raise DysconnError(f"Lamp '{self.address}' not found via BLE scan")
+    async def _resolve_device(self, hass=None):
+        """Resolve the lamp to a BLEDevice / MAC.
+
+        Under Home Assistant the Bluetooth integration owns the adapters and
+        maintains a device registry; we go through it. Outside HA we use a raw
+        bleak scan (CLI / crypto testing).
+        """
+        if hass is not None:
+            return await self._resolve_device_ha(hass)
+        return await self._resolve_device_raw()
+
+    async def _resolve_device_ha(self, hass):
+        from homeassistant.components import bluetooth
+
+        # Normalise a UUID/address to a MAC if possible via HA (re-scans).
+        # HA tracks devices by MAC address (XX:XX:XX:XX:XX:XX).
+        try:
+            if self._looks_like_mac(self.address):
+                device = bluetooth.async_ble_device_from_address(
+                    hass, self.address.upper(), connectable=True
+                )
+                if device is not None:
+                    return device
+        except Exception:  # noqa: BLE001
+            pass
+
+        # Fall back: scan for the lamp by serial/name to discover its MAC.
+        for info in bluetooth.async_discovered_service_info(hass, True):
+            name = info.name or ""
+            mac = (info.address or "").upper()
+            if name == self.address or (self.address and self.address in name):
+                _LOGGER.info("Dyson lamp found by name '%s' -> %s", name, mac)
+                device = bluetooth.async_ble_device_from_address(hass, mac, connectable=True)
+                if device is not None:
+                    return device
+            if self._looks_like_mac(self.address) and mac == self.address.upper():
+                device = bluetooth.async_ble_device_from_address(hass, mac, connectable=True)
+                if device is not None:
+                    return device
+
+        raise DysconnError(
+            f"Lamp '{self.address}' not found. Add BlueZ/other BLE adapter or scan by serial/name."
+        )
+
+    async def _resolve_device_raw(self):
+        # Serial/name -> raw scan fallback (standalone, outside HA).
+        target = self.address
+        if not self._looks_like_mac(self.address) and not (
+            "-" in self.address and len(self.address) >= 18
+        ):
+            devs = await BleakScanner.discover(timeout=5.0)
+            found = None
+            for d in devs:
+                if d.name == self.address or (d.name and self.address in d.name):
+                    found = d
+                    break
+            if found is None:
+                raise DysconnError(f"Lamp '{self.address}' not found via BLE scan")
+            target = found.address
+        return target
+
+    @staticmethod
+    def _looks_like_mac(address: str) -> bool:
+        return ":" in address and len(address) == 17
+
+    async def _establish(self, ble_device, timeout: float) -> None:
+        """Create and connect the BleakClient, using HA's retry connector."""
+        from bleak import BleakClient
+
+        if ble_device is None:
+            raise DysconnError("No BLE device resolved for the lamp")
+
+        if _HAS_BRC:
+            try:
+                self.client = await _establish_connection(
+                    BleakClient,
+                    ble_device,
+                    str(self.address),
+                    disconnected_callback=self._on_disconnect,
+                )
+                return
+            except Exception as err:  # noqa: BLE001
+                _LOGGER.warning(
+                    "bleak_retry_connector failed (%s); falling back to raw connect", err
+                )
+
+        self.client = BleakClient(ble_device, timeout=timeout)
+        await self.client.connect()
+
+    def _on_disconnect(self, client) -> None:
+        """Handle an unexpected BLE disconnect (e.g. app claimed the lamp)."""
+        _LOGGER.warning("Dyson lamp BLE connection lost")
 
     async def disconnect(self) -> None:
         if self.client:

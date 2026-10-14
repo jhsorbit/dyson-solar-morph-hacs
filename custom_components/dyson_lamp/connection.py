@@ -31,17 +31,24 @@ class ConnectionManager:
 
     def __init__(
         self,
+        hass,
         address: str,
         user_id: str,
         ltk_hex: str,
         mode: str = MODE_PERSISTENT,
         idle_seconds: int = APP_COMPATIBLE_IDLE_SECONDS,
     ) -> None:
+        self._hass = hass
         self._lamp = LampClient(address, user_id, ltk_hex)
         self._mode = mode
         self._idle_seconds = idle_seconds
         self._lock = asyncio.Lock()
         self._idle_task: Optional[asyncio.Task] = None
+
+    @property
+    def lamp(self) -> LampClient:
+        """The underlying LampClient (for direct access)."""
+        return self._lamp
 
     @property
     def mode(self) -> str:
@@ -86,11 +93,11 @@ class ConnectionManager:
         async with self._lock:
             if self._mode == MODE_PERSISTENT:
                 if not self.is_connected:
-                    await self._lamp.connect(timeout=timeout)
+                    await self._lamp.connect(timeout=timeout, hass=self._hass)
                 return self._lamp
 
             # App-compatible: connect only for the action.
             if not self.is_connected:
-                await self._lamp.connect(timeout=timeout)
+                await self._lamp.connect(timeout=timeout, hass=self._hass)
             self._schedule_idle_disconnect()
             return self._lamp

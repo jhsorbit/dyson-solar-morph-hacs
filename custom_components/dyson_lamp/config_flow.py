@@ -56,15 +56,27 @@ async def _validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str
     if not address:
         raise ValueError("No BLE address or serial provided")
 
+    if "-" in address and ":" not in address and len(address) >= 18:
+        # Likely a macOS CoreBluetooth UUID pasted in. On Linux/HA the BLE
+        # address must be a MAC (XX:XX:XX:XX:XX:XX) or empty (auto-scan by serial).
+        raise ValueError(
+            "The address looks like a macOS CoreBluetooth UUID. On Linux/HA enter the "
+            "lamp's MAC address (e.g. A4:C1:38:AA:BB:CC) or leave it empty to auto-scan by serial."
+        )
+
     client = LampClient(
         address=address,
         user_id=data[CONF_USER_ID],
         ltk_hex=data[CONF_LTK],
     )
     try:
-        await client.connect(timeout=15)
-    except (DysconnError, Exception) as err:  # noqa: BLE001
-        raise ValueError(f"Could not connect/authenticate to lamp: {err}") from err
+        await client.connect(timeout=15, hass=hass)
+    except DysconnError as err:
+        _LOGGER.exception("Dyson lamp connection failed (phase=connect)")
+        raise ValueError(f"Could not connect to the lamp: {err}") from err
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.exception("Dyson lamp authentication failed (phase=auth)")
+        raise ValueError(f"Connected but authentication failed: {err}") from err
     finally:
         await client.disconnect()
 

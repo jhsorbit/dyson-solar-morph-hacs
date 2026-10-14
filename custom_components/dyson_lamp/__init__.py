@@ -38,6 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     manager = ConnectionManager(
+        hass,
         address=entry.data[CONF_ADDRESS],
         user_id=entry.data[CONF_USER_ID],
         ltk_hex=entry.data[CONF_LTK],
