@@ -4,11 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
-)
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -83,7 +79,6 @@ class DysonSensorBase(SensorEntity):
 class DysonBrightnessSensor(DysonSensorBase):
     """Current lamp brightness in lumens."""
 
-    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "lm"
 
     def __init__(self, coordinator, manager, serial: str) -> None:
@@ -99,8 +94,6 @@ class DysonBrightnessSensor(DysonSensorBase):
 class DysonColorTempSensor(DysonSensorBase):
     """Current lamp color temperature in Kelvin."""
 
-    _attr_device_class = SensorDeviceClass.COLOR_TEMPERATURE
-    _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "K"
 
     def __init__(self, coordinator, manager, serial: str) -> None:
