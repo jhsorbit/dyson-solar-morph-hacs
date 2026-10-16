@@ -191,7 +191,13 @@ class LampClient:
 
         ble_device = await self._resolve_device(hass)
         await self._establish(ble_device, timeout)
-        await self._authenticate()
+        try:
+            await self._authenticate()
+        except BaseException:
+            # Don't leave a connected-but-unauthenticated client behind: later
+            # calls would treat it as ready and every read would fail forever.
+            await self.disconnect()
+            raise
 
     async def _resolve_device(self, hass=None):
         """Resolve the lamp to a BLEDevice / MAC.

@@ -51,13 +51,22 @@ class StatusPoller:
         """Read the lamp state once and notify listeners on success."""
         async with self._lock:
             try:
-                lamp = await self.manager.ensure_connection(timeout=15)
-                self.lamp_state = await lamp.get_state()
+                async def _read():
+                    lamp = await self.manager.ensure_connection(timeout=15)
+                    return await lamp.get_state()
+
+                # Hard timeout so a hung BLE read can never stall polling.
+                self.lamp_state = await asyncio.wait_for(_read(), timeout=60)
                 self._notify()
             except asyncio.CancelledError:
                 raise
             except Exception as err:  # noqa: BLE001
-                _LOGGER.warning("Could not read Dyson lamp state: %s", err)
+                _LOGGER.warning("Could not read Dyson lamp state: %s", repr(err))
+                # Drop a possibly broken link so the next poll reconnects cleanly.
+                try:
+                    await self.manager.reset_connection()
+                except Exception:  # noqa: BLE001
+                    pass
 
     async def request_refresh(self) -> None:
         """Read state immediately (e.g. right after a command)."""

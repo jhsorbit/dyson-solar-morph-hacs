@@ -114,6 +114,12 @@ class ConnectionManager:
             self._idle_task = None
         await self._lamp.disconnect()
 
+    async def reset_connection(self) -> None:
+        """Drop the BLE link (e.g. after a failed read) without stopping a ramp."""
+        if self.wakeup_running:
+            return
+        await self._lamp.disconnect()
+
     def _schedule_idle_disconnect(self) -> None:
         if self._idle_task:
             self._idle_task.cancel()
