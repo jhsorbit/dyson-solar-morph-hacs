@@ -140,16 +140,22 @@ def _register_services(hass: HomeAssistant) -> None:
         manager = await _get_manager()
         if manager is None:
             return
-        lamp = await manager.ensure_connection()
         duration_min = float(call.data.get("duration", 30))
-        await lamp.run_wakeup(
-            duration_sec=int(duration_min * 60),
-            target_lumens=int(call.data.get("lumens", 800)),
-            target_kelvin=int(call.data.get("kelvin", 4800)),
+        # Runs in the background so the calling automation is not blocked.
+        manager.start_wakeup(
+            int(duration_min * 60),
+            int(call.data.get("lumens", 800)),
+            int(call.data.get("kelvin", 4800)),
         )
+
+    async def _cancel_wakeup(call) -> None:
+        manager = await _get_manager()
+        if manager is not None:
+            await manager.cancel_wakeup()
 
     hass.services.async_register(DOMAIN, "sync_location", _sync_location)
     hass.services.async_register(DOMAIN, "set_wakeup", _set_wakeup)
+    hass.services.async_register(DOMAIN, "cancel_wakeup", _cancel_wakeup)
 
 
 async def _auto_solar_sync(hass: HomeAssistant, manager: ConnectionManager) -> None:

@@ -65,3 +65,7 @@ set_wakeup:
           min: 2700
           max: 6500
           mode: box
+
+cancel_wakeup:
+  name: Cancel wake-up routine
+  description: Stop a running wake-up ramp (the lamp stays at its current brightness).

@@ -1,69 +1,158 @@
 # =====================================================================
-# Dyson Lightcycle Morph - Weekly alarm dashboard card (optional)
+# Dyson Lightcycle Morph - Weekly alarm dashboard card
 # =====================================================================
-# Paste into any dashboard: click Edit dashboard -> Add card -> Manual /
-# YAML mode, then paste this block. It arranges the 14 helpers per
-# weekday (switch to arm + time) so you can set everything from your
-# phone in a single view.
+# Dashboard -> Edit -> Add card -> Manual -> paste this block.
+# Tap a day tile to arm/disarm it; tap a time tile to set the wake time.
+# Uses only built-in tile/grid cards (no custom cards needed).
 # =====================================================================
 type: vertical-stack
 cards:
   - type: heading
-    heading: Dyson Lamp weekly alarm
-    heading_level: 3
-
-  - type: entities
-    title: Monday
-    entities:
-      - entity: input_boolean.wake_mon
-        name: Armed
-      - entity: input_datetime.wake_time_mon
+    heading: Wake-up light
+    heading_style: title
+    icon: mdi:weather-sunset-up
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: tile
+        entity: input_boolean.wake_mon
+        name: Monday
+        icon: mdi:power-sleep
+        color: amber
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: input_datetime.wake_time_mon
         name: Wake time
-
-  - type: entities
-    title: Tuesday
-    entities:
-      - entity: input_boolean.wake_tue
-        name: Armed
-      - entity: input_datetime.wake_time_tue
+        icon: mdi:alarm
+        color: orange
+        tap_action:
+          action: more-info
+      - type: tile
+        entity: input_boolean.wake_tue
+        name: Tuesday
+        icon: mdi:power-sleep
+        color: amber
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: input_datetime.wake_time_tue
         name: Wake time
-
-  - type: entities
-    title: Wednesday
-    entities:
-      - entity: input_boolean.wake_wed
-        name: Armed
-      - entity: input_datetime.wake_time_wed
+        icon: mdi:alarm
+        color: orange
+        tap_action:
+          action: more-info
+      - type: tile
+        entity: input_boolean.wake_wed
+        name: Wednesday
+        icon: mdi:power-sleep
+        color: amber
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: input_datetime.wake_time_wed
         name: Wake time
-
-  - type: entities
-    title: Thursday
-    entities:
-      - entity: input_boolean.wake_thu
-        name: Armed
-      - entity: input_datetime.wake_time_thu
+        icon: mdi:alarm
+        color: orange
+        tap_action:
+          action: more-info
+      - type: tile
+        entity: input_boolean.wake_thu
+        name: Thursday
+        icon: mdi:power-sleep
+        color: amber
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: input_datetime.wake_time_thu
         name: Wake time
-
-  - type: entities
-    title: Friday
-    entities:
-      - entity: input_boolean.wake_fri
-        name: Armed
-      - entity: input_datetime.wake_time_fri
+        icon: mdi:alarm
+        color: orange
+        tap_action:
+          action: more-info
+      - type: tile
+        entity: input_boolean.wake_fri
+        name: Friday
+        icon: mdi:power-sleep
+        color: amber
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: input_datetime.wake_time_fri
         name: Wake time
-
-  - type: entities
-    title: Saturday
-    entities:
-      - entity: input_boolean.wake_sat
-        name: Armed
-      - entity: input_datetime.wake_time_sat
+        icon: mdi:alarm
+        color: orange
+        tap_action:
+          action: more-info
+      - type: tile
+        entity: input_boolean.wake_sat
+        name: Saturday
+        icon: mdi:power-sleep
+        color: amber
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: input_datetime.wake_time_sat
         name: Wake time
-
-  - type: entities
-    title: Sunday
-    entities:
-      - entity: input_boolean.wake_sun
-        name: Armed
-      - entity: input_datetime.wake_time_sun
+        icon: mdi:alarm
+        color: orange
+        tap_action:
+          action: more-info
+      - type: tile
+        entity: input_boolean.wake_sun
+        name: Sunday
+        icon: mdi:power-sleep
+        color: amber
+        tap_action:
+          action: toggle
+      - type: tile
+        entity: input_datetime.wake_time_sun
         name: Wake time
+        icon: mdi:alarm
+        color: orange
+        tap_action:
+          action: more-info
+  - type: heading
+    heading: Sunrise settings
+    heading_style: subtitle
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: tile
+        entity: input_number.wake_duration
+        name: Ramp duration
+        color: amber
+        features:
+          - type: numeric-input
+            style: slider
+      - type: tile
+        entity: input_number.wake_brightness
+        name: Brightness
+        color: amber
+        features:
+          - type: numeric-input
+            style: slider
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: button
+        name: Test sunrise
+        icon: mdi:weather-sunset-up
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: dyson_lamp.set_wakeup
+          data:
+            duration: 2
+            lumens: 800
+            kelvin: 4800
+      - type: button
+        name: Stop sunrise
+        icon: mdi:stop-circle-outline
+        show_state: false
+        tap_action:
+          action: perform-action
+          perform_action: dyson_lamp.cancel_wakeup

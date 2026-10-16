@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -79,11 +78,7 @@ class SolarSyncButton(DysonButton):
 
 
 class WakeUpButton(DysonButton):
-    """Run the sunrise wake-up routine.
-
-    The ramp runs as a background task so the button returns immediately
-    (HA buttons are momentary actions) while the light eases up over time.
-    """
+    """Run the sunrise wake-up routine (in the background)."""
 
     def __init__(
         self,
@@ -97,27 +92,6 @@ class WakeUpButton(DysonButton):
         self._duration = duration
         self._lumens = lumens
         self._kelvin = kelvin
-        self._task: asyncio.Task | None = None
 
     async def async_press(self) -> None:
-        if self._task and not self._task.done():
-            _LOGGER.warning("Wake-up already running")
-            return
-        self._task = asyncio.create_task(self._run())
-        # Let the coroutine start one step before returning.
-        await asyncio.sleep(0)
-
-    async def _run(self) -> None:
-        try:
-            lamp = await self._manager.ensure_connection()
-            await lamp.run_wakeup(
-                duration_sec=self._duration,
-                target_lumens=self._lumens,
-                target_kelvin=self._kelvin,
-            )
-            _LOGGER.info("Dyson wake-up routine finished")
-        except asyncio.CancelledError:
-            raise
-        except Exception as err:  # noqa: BLE001
-            _LOGGER.error("Dyson wake-up routine failed: %s", err)
-
+        self._manager.start_wakeup(self._duration, self._lumens, self._kelvin)

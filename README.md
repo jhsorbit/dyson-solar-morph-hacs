@@ -76,7 +76,7 @@ It creates 14 helpers plus one central automation:
 2. Copy `packages/dyson_week_alarm.yaml` from this repo into your HA `packages/` folder.
 3. Reload Home Assistant (Settings → System → Restart, or reload YAML). The helpers and automation appear automatically.
 
-Then, on your phone/dashboard, toggle `wake_mon` etc. **on** to arm a day and set each `wake_time_*` helper to that day's wake-up time. The ramp `duration`/`lumens`/`kelvin` are fixed inside the file (30 min / 800 lm / 4800 K by default) — edit the YAML if you want to change them.
+Then, on your phone/dashboard, toggle `wake_mon` etc. **on** to arm a day and set each `wake_time_*` helper to that day's wake-up time. Ramp duration and target brightness are adjustable via two sliders (`input_number.wake_duration`, `input_number.wake_brightness`). `dyson_lamp.cancel_wakeup` stops a running ramp; turning the light off, on or changing the preset also cancels it.
 
 ## Entities
 

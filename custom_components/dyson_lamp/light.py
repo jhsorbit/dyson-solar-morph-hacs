@@ -104,6 +104,8 @@ class DysonLight(LightEntity):
         return self.lamp_state.color_temp if self.lamp_state else None
 
     async def async_turn_on(self, **kwargs: Any) -> None:
+        # A manual command overrides a running wake-up ramp.
+        await self._manager.cancel_wakeup()
         lamp = await self._manager.ensure_connection()
         if ATTR_BRIGHTNESS in kwargs:
             await lamp.set_brightness(int(round(kwargs[ATTR_BRIGHTNESS] / 255 * 900 + 100)))
@@ -119,6 +121,9 @@ class DysonLight(LightEntity):
         await self._poller.request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
+        # Stop the wake-up ramp first, otherwise it would switch the lamp
+        # back on with its next brightness write.
+        await self._manager.cancel_wakeup()
         lamp = await self._manager.ensure_connection()
         await lamp.set_power(False)
         await self._set_optimistic(on=False)

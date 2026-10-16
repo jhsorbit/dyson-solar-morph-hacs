@@ -31,7 +31,4 @@ It creates, automatically:
 Open the HA app → your dashboard → create an **Entities** card and add the
 helpers you want, or paste the ready-made card from `dashboard_card.yaml`.
 
-Toggle `wake_mon` … `wake_sun` **on** to arm a weekday, and set the matching
-`wake_time_*` to that day's alarm. The ramp duration / brightness / color temp
-are fixed in `dyson_week_alarm.yaml` (30 min / 800 lm / 4800 K by default) —
-edit the file to change them.
+Tap a day tile to arm/disarm it and set the matching wake time. Ramp duration and target brightness are sliders in the same card. "Test sunrise" runs a 2-minute ramp, "Stop sunrise" cancels a running one.

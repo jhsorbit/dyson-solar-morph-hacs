@@ -44,6 +44,47 @@ class ConnectionManager:
         self._idle_seconds = idle_seconds
         self._lock = asyncio.Lock()
         self._idle_task: Optional[asyncio.Task] = None
+        self._wakeup_task: Optional[asyncio.Task] = None
+
+    @property
+    def wakeup_running(self) -> bool:
+        """True while a wake-up ramp is in progress."""
+        return self._wakeup_task is not None and not self._wakeup_task.done()
+
+    def start_wakeup(self, duration_sec: int, lumens: int, kelvin: int) -> None:
+        """Start the wake-up ramp in the background (replaces a running one)."""
+        if self._wakeup_task and not self._wakeup_task.done():
+            self._wakeup_task.cancel()
+        self._wakeup_task = asyncio.create_task(
+            self._run_wakeup(duration_sec, lumens, kelvin)
+        )
+
+    async def cancel_wakeup(self) -> bool:
+        """Stop a running wake-up ramp. Returns True if one was running."""
+        task = self._wakeup_task
+        if task is None or task.done():
+            return False
+        task.cancel()
+        try:
+            await task
+        except (asyncio.CancelledError, Exception):  # noqa: BLE001
+            pass
+        _LOGGER.info("Dyson wake-up ramp cancelled")
+        return True
+
+    async def _run_wakeup(self, duration_sec: int, lumens: int, kelvin: int) -> None:
+        try:
+            lamp = await self.ensure_connection()
+            await lamp.run_wakeup(
+                duration_sec=duration_sec,
+                target_lumens=lumens,
+                target_kelvin=kelvin,
+            )
+            _LOGGER.info("Dyson wake-up routine finished")
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.error("Dyson wake-up routine failed: %s", err)
 
     @property
     def lamp(self) -> LampClient:
@@ -67,6 +108,7 @@ class ConnectionManager:
 
     async def close(self) -> None:
         """Tear down the connection and any idle task."""
+        await self.cancel_wakeup()
         if self._idle_task:
             self._idle_task.cancel()
             self._idle_task = None
@@ -79,6 +121,9 @@ class ConnectionManager:
 
     async def _idle_disconnect(self) -> None:
         await asyncio.sleep(self._idle_seconds)
+        # Never drop the link in the middle of a wake-up ramp.
+        while self.wakeup_running:
+            await asyncio.sleep(5)
         await self._lamp.disconnect()
         self._idle_task = None
         _LOGGER.debug("App-compatible mode: disconnected after idle")

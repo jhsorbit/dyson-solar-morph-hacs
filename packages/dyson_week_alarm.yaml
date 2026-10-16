@@ -73,36 +73,54 @@ input_datetime:
     has_time: true
     icon: mdi:alarm
 
+input_number:
+  wake_duration:
+    name: Wake ramp duration
+    min: 5
+    max: 60
+    step: 5
+    unit_of_measurement: min
+    mode: slider
+    icon: mdi:timer-sand
+    initial: 30
+  wake_brightness:
+    name: Wake target brightness
+    min: 100
+    max: 1000
+    step: 50
+    unit_of_measurement: lm
+    mode: slider
+    icon: mdi:brightness-6
+    initial: 800
+
 automation:
-  - alias: "Dyson Lamp: Weekly wake-up alarm check"
+  - alias: "Dyson Lamp: Weekly wake-up alarm"
     id: dyson_week_alarm_check
     description: >-
-      Fires the lamp wake-up ramp whenever the current minute matches an
-      enabled weekday's wake time.
+      Every minute: if today's alarm is armed and the ramp start time
+      (wake time minus ramp duration) is now, start the sunrise ramp so
+      it reaches full brightness exactly at the wake time.
     trigger:
       - platform: time_pattern
         minutes: "/1"
-    condition: []
+    variables:
+      day: "{{ ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] }}"
+      duration: "{{ states('input_number.wake_duration') | int(30) }}"
+      lumens: "{{ states('input_number.wake_brightness') | int(800) }}"
+      wake_time: "{{ states('input_datetime.wake_time_' ~ day) }}"
+    condition:
+      - condition: template
+        value_template: "{{ is_state('input_boolean.wake_' ~ day, 'on') }}"
+      - condition: template
+        value_template: >-
+          {% if wake_time in ['unknown', 'unavailable'] %}false{% else %}
+          {{ (today_at(wake_time) - timedelta(minutes=duration)).strftime('%H:%M')
+             == now().strftime('%H:%M') }}
+          {% endif %}
     action:
-      # The ramp must FINISH at the configured wake time, so it is launched
-      # `duration` minutes earlier. For simplicity the duration is fixed here
-      # (30 min) and must match the `duration` passed to set_wakeup below.
-      # The matching second differs from a fixed time trigger by only one
-      # minute window, so a per-minute check is precise enough.
-      - variables:
-          today_en: "{{ now().strftime('%a').lower() }}"
-          enabled: "{{ is_state('input_boolean.wake_' ~ today_en, 'on') }}"
-          wake_time: "{{ states['input_datetime.wake_time_' ~ today_en].state }}"
-          ramp_start: >-
-            {{ (as_timestamp(wake_time) - 30 * 60) | timestamp_custom('%H:%M', false) }}
-      - condition: template
-        value_template: "{{ enabled }}"
-      - condition: template
-        value_template: "{{ ramp_start == now().strftime('%H:%M') }}"
       - service: dyson_lamp.set_wakeup
         data:
-          duration: 30
-          lumens: 800
+          duration: "{{ duration }}"
+          lumens: "{{ lumens }}"
           kelvin: 4800
     mode: single
-    max_exceeded: silent

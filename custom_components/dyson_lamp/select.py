@@ -66,6 +66,7 @@ class DysonModeSelect(SelectEntity):
         return None
 
     async def async_select_option(self, option: str) -> None:
+        await self._manager.cancel_wakeup()
         lamp = await self._manager.ensure_connection()
         await lamp.set_mode(EFFECTS[option])
         await self._coordinator.request_refresh()
