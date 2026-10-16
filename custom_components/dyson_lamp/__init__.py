@@ -79,7 +79,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Start periodic status polling, an initial+daily solar/location sync, and
     # keep the connection alive in persistent mode.
     if manager.mode == MODE_PERSISTENT:
-        await manager.ensure_connection()
+        # Never fail the setup just because the lamp isn't reachable right now
+        # (adapter not ready after boot, lamp busy with the phone app, ...).
+        # The poller keeps retrying in the background.
+        try:
+            await manager.ensure_connection()
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning(
+                "Dyson lamp not reachable yet, will keep retrying in the background: %s", err
+            )
     await poller.start()
     sync_task = asyncio.create_task(_auto_solar_sync(hass, manager))
     hass.data[DOMAIN][entry.entry_id]["sync_task"] = sync_task
