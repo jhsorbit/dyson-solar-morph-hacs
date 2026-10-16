@@ -97,30 +97,38 @@ automation:
   - alias: "Dyson Lamp: Weekly wake-up alarm"
     id: dyson_week_alarm_check
     description: >-
-      Every minute: if today's alarm is armed and the ramp start time
-      (wake time minus ramp duration) is now, start the sunrise ramp so
-      it reaches full brightness exactly at the wake time.
+      Every minute: if today's alarm is armed and we are inside the ramp
+      window (wake time minus ramp duration .. wake time), start the sunrise
+      ramp so it reaches full brightness at the wake time. If the window was
+      already started (e.g. you set the wake time only a few minutes ahead),
+      the ramp starts immediately with the remaining time.
     trigger:
       - platform: time_pattern
         minutes: "/1"
     variables:
       day: "{{ ['mon','tue','wed','thu','fri','sat','sun'][now().weekday()] }}"
-      duration: "{{ states('input_number.wake_duration') | int(30) }}"
+      max_duration: "{{ states('input_number.wake_duration') | int(30) }}"
       lumens: "{{ states('input_number.wake_brightness') | int(800) }}"
-      wake_time: "{{ states('input_datetime.wake_time_' ~ day) }}"
+      wake_state: "{{ states('input_datetime.wake_time_' ~ day) }}"
+      remaining_min: >-
+        {% if wake_state in ['unknown', 'unavailable', 'none', ''] %}-1
+        {% else %}{{ (((today_at(wake_state) - now()).total_seconds() + 59) // 60) | int }}
+        {% endif %}
     condition:
       - condition: template
         value_template: "{{ is_state('input_boolean.wake_' ~ day, 'on') }}"
+      # Inside the ramp window: between 1 minute and the full ramp duration before wake time.
+      - condition: template
+        value_template: "{{ 1 <= remaining_min | int(-1) <= max_duration | int(30) }}"
+      # Not already started for this alarm.
       - condition: template
         value_template: >-
-          {% if wake_time in ['unknown', 'unavailable'] %}false{% else %}
-          {{ (today_at(wake_time) - timedelta(minutes=duration)).strftime('%H:%M')
-             == now().strftime('%H:%M') }}
-          {% endif %}
+          {{ (now().timestamp() - as_timestamp(this.attributes.last_triggered, 0))
+             > (max_duration | int(30)) * 60 }}
     action:
       - service: dyson_lamp.set_wakeup
         data:
-          duration: "{{ duration }}"
+          duration: "{{ remaining_min | int(1) }}"
           lumens: "{{ lumens }}"
           kelvin: 4800
     mode: single

@@ -113,27 +113,14 @@ cards:
         color: orange
         tap_action:
           action: more-info
-  - type: heading
-    heading: Sunrise settings
-    heading_style: subtitle
-  - type: grid
-    columns: 2
-    square: false
-    cards:
-      - type: tile
-        entity: input_number.wake_duration
+  - type: entities
+    title: Sunrise settings
+    show_header_toggle: false
+    entities:
+      - entity: input_number.wake_duration
         name: Ramp duration
-        color: amber
-        features:
-          - type: numeric-input
-            style: slider
-      - type: tile
-        entity: input_number.wake_brightness
-        name: Brightness
-        color: amber
-        features:
-          - type: numeric-input
-            style: slider
+      - entity: input_number.wake_brightness
+        name: Target brightness
   - type: grid
     columns: 2
     square: false

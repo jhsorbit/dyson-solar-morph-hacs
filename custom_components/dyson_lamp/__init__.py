@@ -141,6 +141,12 @@ def _register_services(hass: HomeAssistant) -> None:
         if manager is None:
             return
         duration_min = float(call.data.get("duration", 30))
+        _LOGGER.info(
+            "set_wakeup called: %.0f min, %s lm, %s K",
+            duration_min,
+            call.data.get("lumens", 800),
+            call.data.get("kelvin", 4800),
+        )
         # Runs in the background so the calling automation is not blocked.
         manager.start_wakeup(
             int(duration_min * 60),
